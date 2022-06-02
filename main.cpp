@@ -3,13 +3,30 @@
 #endif
 
 
-//compile com [g++ main.cpp -lgdi32]
+//compile com [g++ main.cpp -lgdi32 -o run -static]
 
 #include <Windows.h>
+#include <string>
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+int count = 0;
+
+wchar_t *toWideString ( int & i ) {
+
+    char * buffer = ( char* )malloc( sizeof( int ) ); 
+    itoa( i, buffer, 10 );
+    const char * p_char = buffer;
+    wchar_t * wtext = ( wchar_t* )malloc( sizeof( wchar_t ) * ( strlen( p_char ) ) );
+    
+    std::mbstowcs( wtext, p_char, strlen( p_char ) );
+
+    free( buffer );
+    LPWSTR ws = wtext;
+    return wtext;
+}
+
+LRESULT CALLBACK WndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 //ponto de entrada para a api do windows
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) {
     //cria a classe da janela
     const wchar_t CLASS_NAME[] = L"Sample Window Class";
 
@@ -18,11 +35,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hCursor = LoadCursor( NULL, IDC_ARROW );
 
-    RegisterClass(&wc);
+    RegisterClass( &wc );
     //instancia uma janela
-    HWND hwnd = CreateWindowEx(
+    HWND hwnd = CreateWindowEx( 
         0,
         CLASS_NAME,
         L"Not A Virus",
@@ -36,15 +53,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         NULL
     );
 
-    if(hwnd == NULL) return 0;
+    if( hwnd == NULL ) return 0;
 
-    ShowWindow(hwnd, nCmdShow);
+    ShowWindow( hwnd, nCmdShow );
 
     MSG msg = { }; //state-machine da aplicação
     //loop principal da aplicação
-    while (GetMessage(&msg, NULL, 0, 0) > 0) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    while ( GetMessage( &msg, NULL, 0, 0 ) > 0 ) {
+        
+        TranslateMessage( &msg );
+        DispatchMessage( &msg );
+        
     }
 
     return 0;
@@ -53,7 +72,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 LRESULT CALLBACK WndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ){
     switch( uMsg ){
         case WM_DESTROY: //finaliza aplicação
-            PostQuitMessage(0);
+            PostQuitMessage( 0 );
             return 0;
         case WM_PAINT: //desenha tela inicial
             {
@@ -63,13 +82,17 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ){
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint( hwnd, &ps );
                 //limpa tela
-                FillRect( hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
+                FillRect( hdc, &ps.rcPaint, ( HBRUSH )( COLOR_WINDOW + 1 ) );
                 //desenha na tela
-                SetTextColor( hdc, RGB(0, 0, 0) );
+                SetTextColor( hdc, RGB( 0, 0, 0 ) );
                 SetBkMode( hdc, TRANSPARENT );
-                DrawTextEx( hdc, (LPWSTR)L"Clique ou Tecle!\n(Esc para sair)", -1, &ps.rcPaint, DT_CENTER, NULL );
+                DrawTextEx( hdc, ( LPWSTR )L"Clique ou Tecle!\n( Esc para sair )", -1, &ps.rcPaint, DT_CENTER, NULL );
+                
+                LPWSTR secret = ( LPWSTR )( toWideString( count ) );
+                if( count >= 5 ) DrawTextEx( hdc, secret, -1, &ps.rcPaint, DT_RIGHT | DT_BOTTOM | DT_SINGLELINE, NULL );
+                
                 //finaliza pintura
-                EndPaint(hwnd, &ps);
+                EndPaint( hwnd, &ps );
             }
             return 0;
         case WM_LBUTTONUP: //click do mouse
@@ -81,32 +104,35 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ){
                 HDC hdc = BeginPaint( hwnd, &ps );
                 //cria e vincula fonte
                 LOGFONT logfont; 
-                ZeroMemory(&logfont, sizeof(LOGFONT));
+                ZeroMemory( &logfont, sizeof( LOGFONT ) );
                 logfont.lfCharSet = DEFAULT_CHARSET;
                 logfont.lfHeight = 35; 
-                HFONT hNewFont = CreateFontIndirect(&logfont);
-                HFONT hOldFont = (HFONT)SelectObject( hdc, hNewFont );
+                HFONT hNewFont = CreateFontIndirect( &logfont );
+                HFONT hOldFont = ( HFONT )SelectObject( hdc, hNewFont );
                 //limpa tela
-                FillRect( hdc, &ps.rcPaint, CreateSolidBrush(RGB(0, 255, 255)) );
+                FillRect( hdc, &ps.rcPaint, CreateSolidBrush( RGB( 0, 255, 255 ) ) );
                 //desenha na tela
-                SetTextColor( hdc, RGB(0, 0, 0) );
+                SetTextColor( hdc, RGB( 0, 0, 0 ) );
                 SetBkMode( hdc, TRANSPARENT );
-                DrawTextEx( hdc, (LPWSTR)L"Click!", -1, &ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER, NULL );
+                DrawTextEx( hdc, ( LPWSTR )L"Click!", -1, &ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER, NULL );
                 //desvincula fonte
                 SelectObject( hdc, hOldFont );
                 DeleteObject( hNewFont );
                 //finaliza pintura
-                EndPaint(hwnd, &ps);
+                EndPaint( hwnd, &ps );
+                LPWSTR secret = ( LPWSTR )( toWideString( count ) );
+                count++;
+               
             }
             return 0;
         case WM_KEYUP:
             {
                 switch( wParam ){
                     case VK_RETURN:
-                        SendMessage(hwnd, WM_PAINT, wParam, lParam);
+                        SendMessage( hwnd, WM_PAINT, wParam, lParam );
                         break;
                     case VK_ESCAPE:
-                        SendMessage(hwnd, WM_DESTROY, wParam, lParam);
+                        SendMessage( hwnd, WM_DESTROY, wParam, lParam );
                         break;
                     default:
                         {
@@ -117,27 +143,29 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ){
                             HDC hdc = BeginPaint( hwnd, &ps );
                             //cria e vincula fonte
                             LOGFONT logfont; 
-                            ZeroMemory(&logfont, sizeof(LOGFONT));
+                            ZeroMemory( &logfont, sizeof( LOGFONT ) );
                             logfont.lfCharSet = DEFAULT_CHARSET;
                             logfont.lfHeight = 70; 
-                            HFONT hNewFont = CreateFontIndirect(&logfont);
-                            HFONT hOldFont = (HFONT)SelectObject( hdc, hNewFont );
+                            HFONT hNewFont = CreateFontIndirect( &logfont );
+                            HFONT hOldFont = ( HFONT )SelectObject( hdc, hNewFont );
                             //limpa tela
-                            FillRect( hdc, &ps.rcPaint, CreateSolidBrush(RGB(100, 255, 100)) );
+                            FillRect( hdc, &ps.rcPaint, CreateSolidBrush( RGB( 100, 255, 100 ) ) );
                             //desenha na tela
-                            SetTextColor( hdc, RGB(0, 0, 0) );
+                            SetTextColor( hdc, RGB( 0, 0, 0 ) );
                             SetBkMode( hdc, TRANSPARENT );
-                            DrawTextEx( hdc, (LPWSTR)L"Tec!", -1, &ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER, NULL );
+                            DrawTextEx( hdc, ( LPWSTR )L"Tec!", -1, &ps.rcPaint, DT_SINGLELINE | DT_CENTER | DT_VCENTER, NULL );
                             //desvincula fonte
                             SelectObject( hdc, hOldFont );
                             DeleteObject( hNewFont );
                             //finaliza pintura
-                            EndPaint(hwnd, &ps);
+                            EndPaint( hwnd, &ps );
+                            LPWSTR secret = ( LPWSTR )( toWideString( count ) );
+                            count++;
                         }
                         break;
                 }
             }
             return 0;
     }
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    return DefWindowProc( hwnd, uMsg, wParam, lParam );
 }
